@@ -7,21 +7,20 @@
         android:icon="@android:drawable/ic_menu_info_details"
     />
     <item
-        android:id="@+id/slideshow"
+        android:id="@+id/option"
         android:showAsAction="always"
-        android:title="slideshow"
+        android:title="settings"
         android:icon="@android:drawable/ic_menu_slideshow"
     >
     	<menu>
             <item
-                android:id="@+id/action_settings"
-                android:title="frist"
+                android:id="@+id/option_stop"
+                android:title="stop"
                 android:showAsAction="always"/>
-
-            <item
-                android:id="@+id/action_example"
-                android:title="second"
-                android:showAsAction="always"/>
+			<item
+                android:id="@+id/option_trans"
+                android:title="transition"
+                android:showAsAction="always"/>            
         </menu>
     </item>
 </menu>

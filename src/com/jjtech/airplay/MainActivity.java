@@ -24,20 +24,23 @@ import android.view.MenuItem;
 import android.widget.ListView;
 
 public class MainActivity extends Activity {
-	private AirplayService 	airplay; 
-	private InetAddress 	deviceAddress;
-	private customAdapter 	m_adapter;
-	private ListView		m_list;
-	
+	private AirplayService airplay; 
+	private InetAddress deviceAddress;
+	private customAdapter m_adapter;
+	private ListView m_list;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
 		getActionBar().setTitle("Air Play Serivce");
 		getActionBar().setSubtitle("Not connected");
 		getActionBar().setHomeButtonEnabled(true);
+		
 		airplay = new AirplayService();
-		m_adapter = new customAdapter(this);
+		
+		m_adapter = new customAdapter(this, airplay);
 		m_list = (ListView) findViewById(R.id.listview);
 		m_list.setAdapter(m_adapter);
 		getImageFile("/sdcard/Pictures/");		
@@ -53,20 +56,25 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
-		if (id == android.R.id.home) {
-			ConnectivityManager manager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
-			NetworkInfo wifi = manager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-			if(wifi.isConnected()){
-				SearchDialog("장치를 검색 중입니다.",2);
-			}
-			else
-				AlertDialog("WIFI가 연결되어 있지 않습니다.", "apple TV가 연결되어 있는 네트워크에 접속해주시길 바랍니다.");
-			return true;
+		switch(id){
+			case android.R.id.home:
+				ConnectivityManager manager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+				NetworkInfo wifi = manager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+				if(wifi.isConnected()){
+					SearchDialog("장치를 검색 중입니다.", (long)2);
+				}
+				else
+					AlertDialog("WIFI가 연결되어 있지 않습니다.", "apple TV가 연결되어 있는 네트워크에 접속해주시길 바랍니다.");
+				return true;
+			case R.id.option_stop:
+				airplay.stopImage(); break;
+			case R.id.option_trans:
+				TransitionDialog(); break;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 	
-	private void getImageFile(String path){
+	private void getImageFile(String path){		
 		FilenameFilter fileFilter = new FilenameFilter(){
 			@Override
 			public boolean accept(File dir, String filename) {
@@ -81,6 +89,7 @@ public class MainActivity extends Activity {
 		};
 		File file = new File(path);
 		File[] files = file.listFiles(fileFilter);	
+
 		if(files != null){
 			for(int i=0; i<files.length; i++){
 				m_adapter.add(files[i]);
@@ -88,7 +97,7 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	private void SearchDialog(String message, int time){
+	private void SearchDialog(String message, long time){
 		deviceAddress = getWifiInetAddress();
 		airplay.connect(deviceAddress);
 		final ProgressDialog mProgressDialog = ProgressDialog.show(this,"",message,true);
@@ -107,9 +116,9 @@ public class MainActivity extends Activity {
 	private void DeviceDialog(){
 		final ArrayList<ServiceInfo> list = airplay.getServices();
 		int size = list.size();
-		String[] itmes = new String[size];
+		String[] items = new String[size];
 		for(int i=0; i<size; i++){
-			itmes[i] = list.get(i).getName();
+			items[i] = list.get(i).getName();
 		}
 		
 		AlertDialog.Builder builder  = new AlertDialog.Builder(MainActivity.this);		
@@ -125,10 +134,9 @@ public class MainActivity extends Activity {
 		    public void onClick(DialogInterface dialog, int which) {
 		    	
 		    }
-		});
-		
+		});		
 		if(size > 0){
-			builder.setItems(itmes, new DialogInterface.OnClickListener(){
+			builder.setItems(items, new DialogInterface.OnClickListener(){
 				public void onClick(DialogInterface dialog, int index){
 					selectService(list.get(index));
 				}
@@ -155,6 +163,25 @@ public class MainActivity extends Activity {
 		AlertDialog alert = builder.create();
 		alert.show();
 	}	
+	
+	private void TransitionDialog(){
+		final String[] items = {"Dissolve", "SlideLeft", "SlideRight"};
+		AlertDialog.Builder builder  = new AlertDialog.Builder(MainActivity.this);		
+		builder.setTitle("Transition");	
+		builder.setItems(items, new DialogInterface.OnClickListener(){
+			public void onClick(DialogInterface dialog, int index){
+				airplay.setTransition(items[index]);			
+			}
+		});		
+		builder.setPositiveButton("닫기", new DialogInterface.OnClickListener() {
+		    @Override
+		    public void onClick(DialogInterface dialog, int which) {
+		    	
+		    }
+		});
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
 	
 	private void selectService(ServiceInfo service){
 		airplay.setCurrentService(service);

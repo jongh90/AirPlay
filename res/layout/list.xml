@@ -2,7 +2,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"    
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="#FFFFFF"
 	android:padding ="10dp"
 	android:layout_alignParentLeft="true"
 	android:layout_alignParentTop="true"
@@ -15,12 +14,12 @@
 		android:layout_gravity="left"
 		android:src="@android:drawable/ic_menu_search" />
 	<LinearLayout
-		android:layout_width="match_parent"
+		android:layout_width="wrap_content"
 		android:layout_height="match_parent"
 		android:layout_alignParentLeft="true"
 		android:layout_alignParentTop="true"
 		android:layout_gravity="center"
-		android:padding="10dp"
+		android:paddingLeft="10dp"
 		android:orientation="vertical" >
 		<TextView
 			android:id="@+id/list_img_name"
@@ -33,8 +32,8 @@
 			android:id="@+id/list_img_size"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:textSize="10dp"
-			android:text="확장자 : PNG 크기 : 1540*2048 (200kb)"
+			android:textSize="12dp"
+			android:text="유형 : PNG 크기 : 1540*2048 (200kb)"
 		/>        	
 	</LinearLayout>   
 </LinearLayout>      	

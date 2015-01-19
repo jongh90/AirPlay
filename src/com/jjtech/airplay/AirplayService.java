@@ -32,11 +32,13 @@ public class AirplayService implements ServiceListener {
 	private ExecutorService es;
 	private Map<String, ServiceInfo> servicesMap;
 	private ServiceInfo CurrentService;	
+	private String transition;
 	
 	public AirplayService(){
 		es = Executors.newSingleThreadExecutor();
 		servicesMap = new HashMap<String, ServiceInfo>();
 		CurrentService = null;
+		transition = "Dissolve";
 	}
 	
 	/* apple TV 기기들을 인식하고 그 목록을 Map<String, ServiceInfo>services에 저장한다. */
@@ -49,6 +51,13 @@ public class AirplayService implements ServiceListener {
 		es.submit(new connectTask(deviceAddress));
 	}
 	
+	public boolean isConnected(){
+		if(CurrentService != null) 
+			return true;
+		else	
+			return false;
+	}
+	
 	/* JmDNS를 종료한다. 반드시 호출하지 않아도 된다. */
 	public void stop() {
 		es.submit(new stopTask());
@@ -59,6 +68,10 @@ public class AirplayService implements ServiceListener {
 	/* PUT photo */
 	public void putImage(File file, String transition){
 		es.submit(new PutImageTask(CurrentService, file, transition));
+	}
+	
+	public void putImage(File file){
+		es.submit(new PutImageTask(CurrentService, file, this.transition));
 	}
 	
 	/* POST stop */
@@ -75,7 +88,30 @@ public class AirplayService implements ServiceListener {
 	public void showCacheImage(String key, String transition){
 		es.submit(new showCacheImageTask(CurrentService, key, transition));
 	}
-
+	
+	public void setTransition(String transition){
+		this.transition = transition;
+	}
+	
+	public ArrayList<ServiceInfo> getServices(){
+		ArrayList<ServiceInfo> services = new ArrayList<ServiceInfo>();
+		Set<String> key = servicesMap.keySet();
+		for (Iterator<String> iterator = key.iterator(); iterator.hasNext();) {
+             String keyName = (String) iterator.next();
+             ServiceInfo service = servicesMap.get(keyName);
+             services.add(service);
+		}
+		return services;
+	}
+	
+	public void setCurrentService(ServiceInfo CurrentService){
+		this.CurrentService = CurrentService;
+	}
+	
+	public ServiceInfo getCurrentService(){
+		return this.CurrentService;
+	}
+	
 	private class connectTask implements Runnable{
 		
 		private InetAddress deviceAddress;
@@ -295,24 +331,7 @@ public class AirplayService implements ServiceListener {
 		}
 	}
 	
-	public ArrayList<ServiceInfo> getServices(){
-		ArrayList<ServiceInfo> services = new ArrayList<ServiceInfo>();
-		Set<String> key = servicesMap.keySet();
-		for (Iterator<String> iterator = key.iterator(); iterator.hasNext();) {
-             String keyName = (String) iterator.next();
-             ServiceInfo service = servicesMap.get(keyName);
-             services.add(service);
-		}
-		return services;
-	}
 	
-	public void setCurrentService(ServiceInfo CurrentService){
-		this.CurrentService = CurrentService;
-	}
-	
-	public ServiceInfo getCurrentService(){
-		return this.CurrentService;
-	}
 		
 	@Override
 	public void serviceAdded(final ServiceEvent event) {
