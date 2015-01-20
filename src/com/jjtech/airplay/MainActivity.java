@@ -18,17 +18,25 @@ import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
+import android.widget.TextView;
 
 public class MainActivity extends Activity {
 	private AirplayService airplay; 
 	private InetAddress deviceAddress;
 	private customAdapter m_adapter;
 	private ListView m_list;
-
+	private String rootDir;
+	private String nowDir = "/sdcard/Pictures/";
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -43,7 +51,18 @@ public class MainActivity extends Activity {
 		m_adapter = new customAdapter(this, airplay);
 		m_list = (ListView) findViewById(R.id.listview);
 		m_list.setAdapter(m_adapter);
-		getImageFile("/sdcard/Pictures/");		
+		m_list.setOnItemClickListener(new OnItemClickListener(){
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				// TODO Auto-generated method stub
+				m_adapter.imageSelect(position);
+			}			
+		});
+		
+		rootDir = Environment.getExternalStorageDirectory().getAbsolutePath()+"/";
+		Log.d("root", rootDir);
+		nowDir = rootDir+"Pictures/";
+		getImageFile(nowDir);		
 	}
 
 	@Override
@@ -66,6 +85,8 @@ public class MainActivity extends Activity {
 				else
 					AlertDialog("WIFI가 연결되어 있지 않습니다.", "apple TV가 연결되어 있는 네트워크에 접속해주시길 바랍니다.");
 				return true;
+			case R.id.folder:
+				DirectoryDialog(nowDir); break;
 			case R.id.option_stop:
 				airplay.stopImage(); break;
 			case R.id.option_trans:
@@ -74,7 +95,67 @@ public class MainActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 	
-	private void getImageFile(String path){		
+	private void DirectoryDialog(final String path){		
+		File file = new File(path);
+		File[] files = file.listFiles();
+		ArrayList<File> dir = new ArrayList<File>();
+		//Path에서 폴더만 가져와서 리스트에 추가함
+		for(int i=0; i<files.length; i++){
+			if(files[i].isDirectory()){
+				dir.add(files[i]);
+			}				
+		}			
+		//리스트에 추가된 파일명을 items에 옮김
+		final String[] items = new String[dir.size() +1];
+		items[0] = "[...]";		
+		if(dir.size()>0){
+			for(int i=1; i<=dir.size(); i++){
+				items[i] = dir.get(i-1).getName();
+			}
+		}
+		
+		AlertDialog dialog;
+		AlertDialog.Builder builder  = new AlertDialog.Builder(MainActivity.this);		
+		builder.setTitle(path);	
+		builder.setItems(items, new DialogInterface.OnClickListener(){
+			public void onClick(DialogInterface dialog, int index){
+				String next, tmp;
+				if(index == 0){
+					if(path.length() > rootDir.length()){
+						tmp = path.substring(0, path.lastIndexOf('/'));
+						next = tmp.substring(0, tmp.lastIndexOf('/')+1);
+						DirectoryDialog(next);
+					}else{
+						DirectoryDialog(rootDir);
+					}
+				}else{
+					next = path + items[index] + "/";	
+					DirectoryDialog(next);
+				}					
+			}
+		});	
+		builder.setNegativeButton("확인", new DialogInterface.OnClickListener() {
+		    @Override
+		    public void onClick(DialogInterface dialog, int which) {
+		    	dialog.dismiss();
+		    	if(nowDir != path)
+		    		getImageFile(path);
+		    }
+		});	
+		builder.setPositiveButton("닫기", new DialogInterface.OnClickListener() {
+		    @Override
+		    public void onClick(DialogInterface dialog, int which) {
+		    	
+		    }
+		});				
+		dialog = builder.create();
+		dialog.show();  
+	}
+	
+	private void getImageFile(String path){	
+		TextView pathView = (TextView)findViewById(R.id.path);	
+		pathView.setText(path);	
+		nowDir = path;
 		FilenameFilter fileFilter = new FilenameFilter(){
 			@Override
 			public boolean accept(File dir, String filename) {
@@ -89,12 +170,12 @@ public class MainActivity extends Activity {
 		};
 		File file = new File(path);
 		File[] files = file.listFiles(fileFilter);	
-
+		m_adapter.refresh();
 		if(files != null){
 			for(int i=0; i<files.length; i++){
 				m_adapter.add(files[i]);
 			}
-		}
+		}	
 	}
 	
 	private void SearchDialog(String message, long time){
@@ -134,7 +215,8 @@ public class MainActivity extends Activity {
 		    public void onClick(DialogInterface dialog, int which) {
 		    	
 		    }
-		});		
+		});
+		
 		if(size > 0){
 			builder.setItems(items, new DialogInterface.OnClickListener(){
 				public void onClick(DialogInterface dialog, int index){

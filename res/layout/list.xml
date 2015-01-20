@@ -12,7 +12,7 @@
 		android:layout_width="60dp"
 		android:layout_height="60dp"
 		android:layout_gravity="left"
-		android:src="@android:drawable/ic_menu_search" />
+		android:src="@drawable/icon512" />
 	<LinearLayout
 		android:layout_width="wrap_content"
 		android:layout_height="match_parent"

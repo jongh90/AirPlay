@@ -76,21 +76,20 @@ public class customAdapter extends BaseAdapter {
 		
 		String fileName = m_list.get(position).getName();
 		
-		
-		holder.img.setImageBitmap(m_img.get(position));		
+		if(m_img.get(position) != null)
+			holder.img.setImageBitmap(m_img.get(position));		
 		holder.img_name.setText(fileName.substring(0, fileName.lastIndexOf('.')));
 		holder.img_size.setText("유형 : "+ fileName.substring(fileName.lastIndexOf('.')+1));
 		holder.img_size.append(m_detail.get(position));
 		
-		convertView.setOnClickListener(new OnClickListener(){ 
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				if(airplay.isConnected())
-					airplay.putImage(m_list.get(position));	
+		convertView.setOnTouchListener(new OnTouchListener(){
+			public boolean onTouch(View v, MotionEvent event) {
+				if(event.getAction() == MotionEvent.ACTION_DOWN)
+					v.setBackgroundColor(color.holo_blue_light);
+				return false;
 			}
-		});
-				
+		});	
+		
 		return convertView;
 	}
 	
@@ -106,19 +105,53 @@ public class customAdapter extends BaseAdapter {
 		
 	}
 
-	public void add(final File file){				
+	public void refresh(){
+		m_list.clear();
+		m_img.clear();
+		m_detail.clear();
+		notifyDataSetChanged();
+	}
+	
+	public void imageSelect(int position){
+		if(airplay.isConnected())
+			airplay.putImage(m_list.get(position));
+	}
+	
+	public void add(final File file){	
 		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inSampleSize = 4;
-		Bitmap bm=BitmapFactory.decodeFile(file.getPath(), options);     
-		Bitmap rbm = Bitmap.createScaledBitmap(bm, 100, 100, true ); 		
-		
+		options.inJustDecodeBounds = true;
+		Bitmap bm = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+
 		int fileSize = (int)(file.length()/1024);
-		int width = bm.getWidth();
-		int height = bm.getHeight();
-		String detail = ("\n크기 : "+width+" * "+height+" ("+fileSize +"KB)");
+		String detail = ("\n크기 : "+ options.outWidth+" * "+  options.outHeight+" ("+fileSize +"KB)");
 		
-		m_detail.add(detail);
-		m_img.add(rbm);
+		BitmapFactory.Options roptions = new BitmapFactory.Options();
+		roptions.inSampleSize = calculateInSampleSize(options, 200, 200);
+		bm=BitmapFactory.decodeFile(file.getAbsolutePath(), roptions);  
+		
+		m_img.add(bm);		
+		m_detail.add(detail);		
 		m_list.add(file);
+	}
+	
+	public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+	    // Raw height and width of image
+	    final int height = options.outHeight;
+	    final int width = options.outWidth;
+	    int inSampleSize = 1;
+	
+	    if (height > reqHeight || width > reqWidth) {
+	
+	        final int halfHeight = height / 2;
+	        final int halfWidth = width / 2;
+	
+	        // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+	        // height and width larger than the requested height and width.
+	        while ((halfHeight / inSampleSize) > reqHeight
+	                && (halfWidth / inSampleSize) > reqWidth) {
+	            inSampleSize *= 2;
+	        }
+	    }
+	    return inSampleSize;
 	}
 }
