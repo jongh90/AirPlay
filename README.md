@@ -68,7 +68,7 @@ JmDNS : http://jmdns.sourceforge.net/
 droidPlay : https://github.com/tutikka/DroidPlay
 
 # Sample Demo
-[1](doc/1.png)
+![1](doc/1.png)
 
 
 
