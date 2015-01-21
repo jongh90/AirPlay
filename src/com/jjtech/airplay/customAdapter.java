@@ -1,19 +1,17 @@
 package com.jjtech.airplay;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import android.R.color;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Log;
+import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -72,16 +70,16 @@ public class customAdapter extends BaseAdapter {
 			convertView.setTag(holder);
 		}else{
 			holder = (CustomHolder) convertView.getTag();
-		}
-		
+		}	
+
+			
 		String fileName = m_list.get(position).getName();
-		
-		if(m_img.get(position) != null)
-			holder.img.setImageBitmap(m_img.get(position));		
 		holder.img_name.setText(fileName.substring(0, fileName.lastIndexOf('.')));
 		holder.img_size.setText("유형 : "+ fileName.substring(fileName.lastIndexOf('.')+1));
 		holder.img_size.append(m_detail.get(position));
+		holder.img.setImageResource(R.drawable.icon512);
 		
+		new ImageResizeTask(holder.img, position).execute(m_list.get(position));
 		convertView.setOnTouchListener(new OnTouchListener(){
 			public boolean onTouch(View v, MotionEvent event) {
 				if(event.getAction() == MotionEvent.ACTION_DOWN)
@@ -125,33 +123,51 @@ public class customAdapter extends BaseAdapter {
 		int fileSize = (int)(file.length()/1024);
 		String detail = ("\n크기 : "+ options.outWidth+" * "+  options.outHeight+" ("+fileSize +"KB)");
 		
-		BitmapFactory.Options roptions = new BitmapFactory.Options();
-		roptions.inSampleSize = calculateInSampleSize(options, 200, 200);
-		bm=BitmapFactory.decodeFile(file.getAbsolutePath(), roptions);  
-		
-		m_img.add(bm);		
+		m_img.add(null);
 		m_detail.add(detail);		
 		m_list.add(file);
 	}
 	
-	public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
-	    // Raw height and width of image
-	    final int height = options.outHeight;
-	    final int width = options.outWidth;
-	    int inSampleSize = 1;
-	
-	    if (height > reqHeight || width > reqWidth) {
-	
-	        final int halfHeight = height / 2;
-	        final int halfWidth = width / 2;
-	
-	        // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-	        // height and width larger than the requested height and width.
-	        while ((halfHeight / inSampleSize) > reqHeight
-	                && (halfWidth / inSampleSize) > reqWidth) {
-	            inSampleSize *= 2;
+	public class ImageResizeTask extends AsyncTask<File, Void, Bitmap>{
+		private File file;
+		private int position;
+		private final WeakReference<ImageView> imageViewReference;
+		
+		public ImageResizeTask(ImageView imageView, int position){
+			imageViewReference = new WeakReference<ImageView>(imageView);
+			this.position = position;
+		}
+		
+		@Override
+		protected Bitmap doInBackground(File... params) {
+			// TODO Auto-generated method stub
+			if(m_img.get(position) == null){
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inSampleSize = getSampleSize(params[0]);
+				Bitmap bm=BitmapFactory.decodeFile(params[0].getAbsolutePath(), options);
+				m_img.set(position, bm);
+				return bm;
+			}else{
+				return m_img.get(position);
+			}			
+		}
+		
+		@Override
+	    protected void onPostExecute(Bitmap bitmap) {
+	        if (imageViewReference != null) {
+	        	ImageView imageView = imageViewReference.get();
+	        	if (imageView != null) {
+	        		imageView.setImageBitmap(bitmap);
+	        	}
 	        }
-	    }
-	    return inSampleSize;
+	    }				
+	}
+	
+	public int getSampleSize(File file){
+		int filesize = (int)(file.length()/1024);
+		if(filesize > 3200) return 16;
+		else if(filesize > 1600) return 8;
+		else if(filesize > 800) return 4;
+		else return 2;
 	}
 }
